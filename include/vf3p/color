@@ -25,86 +25,134 @@
 #include <cstdint>
 #include <type_traits>
 #include <array>
+#include <utility>
 
 namespace vf3p
 {   namespace detail
-    {   template<std::size_t N, typename T>
+    {   template <std::size_t ... Is>
+        constexpr auto indexSequenceReverse
+        (   std::index_sequence<Is...> const &)
+        ->  decltype( std::index_sequence<sizeof...(Is)-1U-Is...>{}
+        );
+        template <std::size_t N>
+        using makeIndexSequenceReverse
+        =   decltype(indexSequenceReverse(std::make_index_sequence<N>{}));
+        template<std::size_t N>
+        struct num { static const constexpr auto value = N; };
+        template <class F, std::size_t... Is>
+        constexpr void for_(F func, std::index_sequence<Is...>)
+        {   using expander = int[];
+            (void)expander{0, ((void)func(num<Is>{}), 0)...};
+        }
+        template <std::size_t N, typename F>
+        constexpr void for_(F func)
+        {   for_(func, makeIndexSequenceReverse<N>());
+            // for_(func, std::make_index_sequence<N>());
+        }
+        // template <class F, std::size_t... Is>
+        // void for_(F func, std::index_sequence<Is...>)
+        // {   (func(num<Is>{}), ...);
+        // }
+        template<std::size_t N, typename T>
         struct uint32_to_array
         {};
         template<typename T>
         struct uint32_to_array<1, T> // 8-bits per channels
-        {   static T convert(uint32_t rgba, std::false_type)
-            {   T c;
-                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
-                {   *itr = rgba & 0xFF;
-                    rgba >>= 8;
-                }
+        {   constexpr static T convert(uint32_t rgba, std::false_type)
+            {   T c{0, 0, 0, 0};
+                for_<c.size()>
+                (   [&] (auto i)
+                    {   std::get<i.value>(c) = rgba & 0xFF;
+                        rgba >>= 8;
+                    }
+                );
                 return c;
             }
-            static T convert(uint32_t rgba, std::true_type)
-            {   T c;
-                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
-                {   *itr = (rgba & 0xFF) * (typename T::value_type)3.921568e-3;
-                    rgba >>= 8;
-                }
+            constexpr static T convert(uint32_t rgba, std::true_type)
+            {   T c{0, 0, 0, 0};
+                for_<c.size()>
+                (   [&] (auto i)
+                    {   std::get<i.value>(c)
+                    =   (rgba & 0xFF)
+                    *   (typename T::value_type)3.921568e-3;
+                        rgba >>= 8;
+                    }
+                );
                 return c;
             }
         };
         template<typename T>
         struct uint32_to_array<2, T> // 16-bits per channels
-        {   static T convert(uint32_t rgba, std::false_type)
-            {   T c;
-                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
-                {   *itr = (rgba & 0xFF) * 0xFF;
-                    rgba >>= 8;
-                }
+        {   constexpr static T convert(uint32_t rgba, std::false_type)
+            {   T c{0, 0, 0, 0};
+                for_<c.size()>
+                (   [&] (auto i)
+                    {   std::get<i.value>(c) = (rgba & 0xFF) * 0xFF;
+                        rgba >>= 8;
+                    }
+                );
                 return c;
             }
-            static T convert(uint32_t rgba, std::true_type)
-            {   T c;
-                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
-                {   *itr = (rgba & 0xFF) * (typename T::value_type)3.921568e-3;
-                    rgba >>= 8;
-                }
+            constexpr static T convert(uint32_t rgba, std::true_type)
+            {   T c{0, 0, 0, 0};
+                for_<c.size()>
+                (   [&] (auto i)
+                    {   std::get<i.value>(c)
+                    =   (rgba & 0xFF)
+                    *   (typename T::value_type)3.921568e-3;
+                        rgba >>= 8;
+                    }
+                );
                 return c;
             }
         };
         template<typename T>
         struct uint32_to_array<4, T> // 32-bits per channels
-        {   static T convert(uint32_t rgba, std::false_type)
-            {   T c;
-                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
-                {   *itr = (rgba & 0xFF) * 0xFFFF;
-                    rgba >>= 8;
-                }
+        {   constexpr static T convert(uint32_t rgba, std::false_type)
+            {   T c{0, 0, 0, 0};
+                for_<c.size()>
+                (   [&] (auto i)
+                    {   std::get<i.value>(c) = (rgba & 0xFF) * 0xFFFF;
+                        rgba >>= 8;
+                    }
+                );
                 return c;
             }
-            static T convert(uint32_t rgba, std::true_type)
-            {   T c;
-                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
-                {   *itr = (rgba & 0xFF) * (typename T::value_type)3.921568e-3;
-                    rgba >>= 8;
-                }
+            constexpr static T convert(uint32_t rgba, std::true_type)
+            {   T c{0, 0, 0, 0};
+                for_<c.size()>
+                (   [&] (auto i)
+                    {   std::get<i.value>(c)
+                    =   (rgba & 0xFF)
+                    *   (typename T::value_type)3.921568e-3;
+                        rgba >>= 8;
+                    }
+                );
                 return c;
             }
         };
         template<typename T>
         struct uint32_to_array<8, T> // 64-bits per channels
-        {   static T convert(uint32_t rgba, std::false_type)
-            {   T c;
-                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
-                {   *itr = (rgba & 0xFF) * 0xFFFFFF;
-                    rgba >>= 8;
-                }
+        {   constexpr static T convert(uint32_t rgba, std::false_type)
+            {   T c{0, 0, 0, 0};
+                for_<c.size()>
+                (   [&] (auto i)
+                    {   std::get<i.value>(c) = (rgba & 0xFF) * 0xFFFFFF;
+                        rgba >>= 8;
+                    }
+                );
                 return c;
             }
-            static T convert(uint32_t rgba, std::true_type)
-            {   T c;
-                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
-                {   *itr = (rgba & 0xFF)
-                         * (typename T::value_type)3.921568627451e-3;
-                    rgba >>= 8;
-                }
+            constexpr static T convert(uint32_t rgba, std::true_type)
+            {   T c{0, 0, 0, 0};
+                for_<c.size()>
+                (   [&] (auto i)
+                    {   std::get<i.value>(c)
+                    =   (rgba & 0xFF)
+                    *   (typename T::value_type)3.921568627451e-3;
+                        rgba >>= 8;
+                    }
+                );
                 return c;
             }
         };
@@ -132,11 +180,13 @@ namespace vf3p
 
 // -- ctors --------------------------------------------------------------------
 
-        /// @brief Default constructor
+        /// @brief default constructor
         /// @details Initializes all elements to zero.
         generic_color() noexcept
         :   c_()
         {}
+        /// @brief array constructor
+        /// @param a The array to copy.
         constexpr generic_color(const std::array<T,C>& a)
         :   c_(a)
         {}
@@ -172,7 +222,7 @@ namespace vf3p
         }
         /// @brief converting constructor from uint32_t
         /// @param rgba The 32-bit RGBA value.
-        generic_color(uint32_t rgba)
+        constexpr generic_color(uint32_t rgba)
         :   c_
         (   detail::uint32_to_array<sizeof(T), std::array<T, C>>::convert
             (   rgba
