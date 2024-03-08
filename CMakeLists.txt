@@ -118,3 +118,29 @@ export(EXPORT ${PROJECT_NAME}-targets
   FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake"
   NAMESPACE ${PROJECT_NAME}::
 )
+
+## include unit test only when vf3p is not being used as a subproject
+#
+if (NOT_SUBPROJECT)
+  ## add unit tests
+  #
+  if(${VF3P_ENABLE_TESTS})
+    enable_testing()
+    find_package(
+      Catch2 3
+      HINTS $ENV{HOME} /usr/local /opt/local /opt
+    )
+    if(NOT Catch2_FOUND)
+        message(STATUS "Fetching Catch2 library...")
+        FetchContent_Declare(
+          catch2
+          GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+          GIT_TAG        v3.5.2
+        )
+        FetchContent_MakeAvailable(Catch2)
+        list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+    endif()
+    include(Catch)
+    add_subdirectory(test)
+  endif()
+endif(NOT_SUBPROJECT)
