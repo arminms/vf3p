@@ -275,14 +275,14 @@ namespace vf3p
 
 // -- capacity -----------------------------------------------------------------
 
-        /// @brief returns the number of elements in the color
-        /// @return The number of elements in the color.
-        size_type size() const
-        {   return c_.size();   }
         /// @brief checks whether the color is empty
         /// @return True if the color is empty, false otherwise.
-        bool empty() const
+        constexpr bool empty() const
         {   return c_.empty();   }
+        /// @brief returns the number of elements in the color
+        /// @return The number of elements in the color.
+        constexpr size_type size() const
+        {   return c_.size();   }
 
 // -- comparison operators -----------------------------------------------------
 
