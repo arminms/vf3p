@@ -1,0 +1,283 @@
+//
+// Copyright (c) 2024 Armin Sobhani
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+#ifndef _VF3P_COLOR_
+#define _VF3P_COLOR_
+
+#include <cstdint>
+#include <type_traits>
+#include <array>
+
+namespace vf3p
+{   namespace detail
+    {   template<std::size_t N, typename T>
+        struct from_uint32_impl
+        {};
+        template<typename T>
+        struct from_uint32_impl<1, T> // 8-bits per channels
+        {   static void convert(T& p, uint32_t rgba, std::false_type)
+            {   for (auto itr = p.rbegin(); itr != p.rend(); ++itr)
+                {   *itr = rgba & 0xFF;
+                    rgba >>= 8;
+                }
+            }
+            static void convert(T& p, uint32_t rgba, std::true_type)
+            {   for (auto itr = p.rbegin(); itr != p.rend(); ++itr)
+                {   *itr = (rgba & 0xFF) * (typename T::value_type)3.921568e-3;
+                    rgba >>= 8;
+                }
+            }
+        };
+        template<typename T>
+        struct from_uint32_impl<2, T> // 16-bits per channels
+        {   static void convert(T& p, uint32_t rgba, std::false_type)
+            {   for (auto itr = p.rbegin(); itr != p.rend(); ++itr)
+                {   *itr = (rgba & 0xFF) * 0xFF;
+                    rgba >>= 8;
+                }
+            }
+            static void convert(T& p, uint32_t rgba, std::true_type)
+            {   for (auto itr = p.rbegin(); itr != p.rend(); ++itr)
+                {   *itr = (rgba & 0xFF) * (typename T::value_type)3.921568e-3;
+                    rgba >>= 8;
+                }
+            }
+        };
+        template<typename T>
+        struct from_uint32_impl<4, T> // 32-bits per channels
+        {   static void convert(T& p, uint32_t rgba, std::false_type)
+            {   for (auto itr = p.rbegin(); itr != p.rend(); ++itr)
+                {   *itr = (rgba & 0xFF) * 0xFFFF;
+                    rgba >>= 8;
+                }
+            }
+            static void convert(T& p, uint32_t rgba, std::true_type)
+            {   for (auto itr = p.rbegin(); itr != p.rend(); ++itr)
+                {   *itr = (rgba & 0xFF) * (typename T::value_type)3.921568e-3;
+                    rgba >>= 8;
+                }
+            }
+        };
+        template<typename T>
+        struct from_uint32_impl<8, T> // 64-bits per channels
+        {   static void convert(T& p, uint32_t rgba, std::false_type)
+            {   for (auto itr = p.rbegin(); itr != p.rend(); ++itr)
+                {   *itr = (rgba & 0xFF) * 0xFFFFFF;
+                    rgba >>= 8;
+                }
+            }
+            static void convert(T& p, uint32_t rgba, std::true_type)
+            {   for (auto itr = p.rbegin(); itr != p.rend(); ++itr)
+                {   *itr = (rgba & 0xFF)
+                         * (typename T::value_type)3.921568627451e-3;
+                    rgba >>= 8;
+                }
+            }
+        };
+        constexpr uint8_t hexchar_to_int(char ch)
+        {   if (ch >= '0' && ch <= '9') return ch - '0';
+            if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
+            if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
+            return 0;
+        }
+    }   // end detail namespace
+
+    template <typename T, std::size_t C = 4>
+    class generic_color
+    {   std::array<T, C> p_; // color
+    public:
+        using value_type = T;
+        using size_type = typename std::array<T,C>::size_type;
+        using difference_type = typename std::array<T,C>::difference_type;
+        using reference = typename std::array<T,C>::reference;
+        using const_reference = typename std::array<T,C>::const_reference;
+        using iterator = typename std::array<T,C>::iterator;
+        using const_iterator = typename std::array<T,C>::const_iterator;
+        using reverse_iterator = typename std::array<T,C>::reverse_iterator;
+        using const_reverse_iterator = typename std::array<T,C>::const_reverse_iterator;
+
+// -- ctors --------------------------------------------------------------------
+
+        /// @brief Default constructor
+        /// @details Initializes all elements to zero.
+        generic_color() noexcept
+        :   p_()
+        {}
+        /// @brief iterator constructor
+        /// @details Initializes the color with the elements in the range
+        ///          [first, last).
+        /// @param first The first element in the range.
+        /// @param last The last element in the range.
+        /// @tparam InputIt The type of the iterator.
+        template<typename InputIt>
+        generic_color(InputIt first, InputIt last)
+        {   for (size_t i = 0; i < C && first != last; ++i)
+                p_[i] = *first++;
+        }
+        /// @brief copy constructor
+        /// @param other The color to copy.
+        generic_color(const generic_color& other)
+        :   p_(other.p_)
+        {}
+        /// @brief move constructor
+        /// @param other The color to move.
+        generic_color(generic_color&& other)
+        :   p_(std::move(other.p_))
+        {}
+        /// @brief initializer list constructor
+        /// @param init The initializer list.
+        generic_color(std::initializer_list<value_type> init)
+        {   auto first = init.begin(), last = init.end();
+            for (size_t i = 0; i < C && first != last; ++i)
+                p_[i] = *first++;
+        }
+        /// @brief converting constructor from uint32_t
+        /// @param rgba The 32-bit RGBA value.
+        generic_color(uint32_t rgba)
+        {   detail::from_uint32_impl<sizeof(T), std::array<T, C>>::convert
+            (   p_
+            ,   rgba
+            ,   std::is_floating_point<T>()
+            );
+        }
+
+// -- copy assignment operators ------------------------------------------------
+
+        /// @brief copy assignment operator
+        /// @param other The color to copy.
+        generic_color& operator= (const generic_color& other)
+        {   p_ = other.p_;
+            return *this;
+        }
+        /// @brief move assignment operator
+        /// @param other The color to move.
+        generic_color& operator= (generic_color&& other)
+        {   p_ = std::move(other.p_);
+            return *this;
+        }
+        /// @brief initializer list assignment operator
+        /// @param init The initializer list.
+        generic_color& operator= (std::initializer_list<value_type> init)
+        {   p_ = init;
+            return *this;
+        }
+
+// -- element access -----------------------------------------------------------
+
+        /// @brief subscript operator
+        /// @param i 
+        /// @return reference to the element at index i.
+        reference operator[] (size_type i)
+        {   return p_[i];   }
+        /// @brief subscript operator
+        /// @param i
+        /// @return const reference to the element at index i.
+        const_reference operator[] (size_type i) const
+        {   return p_[i];   }
+        /// @brief returns a reference to the element at specified location pos
+        /// @param pos The position of the element to return.
+        /// @return reference to the element at position pos.
+        reference at(size_type pos)
+        {   return p_.at(pos);   }
+        /// @brief returns a const reference to the element at specified location pos
+        const_reference at(size_type pos) const
+        {   return p_.at(pos);   }
+
+// -- capacity -----------------------------------------------------------------
+
+        /// @brief returns the number of elements in the color
+        /// @return The number of elements in the color.
+        size_type size() const
+        {   return p_.size();   }
+        /// @brief checks whether the color is empty
+        /// @return True if the color is empty, false otherwise.
+        bool empty() const
+        {   return p_.empty();   }
+
+// -- comparison operators -----------------------------------------------------
+
+        /// @brief equality operator
+        /// @param lhs The left-hand side color.
+        /// @param rhs The right-hand side color.
+        /// @return True if the colors are equal, false otherwise.
+        friend
+        bool operator== (const generic_color& lhs, const generic_color& rhs)
+        {   return lhs.p_ == rhs.p_;   }
+        /// @brief inequality operator
+        /// @param lhs The left-hand side color.
+        /// @param rhs The right-hand side color.
+        /// @return True if the colors are not equal, false otherwise.
+        friend
+        bool operator!= (const generic_color& lhs, const generic_color& rhs)
+        {   return lhs.p_ != rhs.p_;   }
+    };
+
+    /// @brief A color with 8-bit unsigned integer elements and 4 channels.
+    using color = generic_color<uint8_t, 4>;
+}   // end vf3p namespace
+
+// -- string literal operator --------------------------------------------------
+
+    template<char... Digits>
+    struct to_color;
+
+    template<char D, char... Digits>
+    struct to_color<D, Digits...>
+    {   static_assert
+        (   (D >= '0' && D <= '9')
+        ||  (D >= 'A' && D <= 'F')
+        ||  (D >= 'a' && D <= 'f')
+        ||   D == 'x'
+        ||   D == 'X'
+        ,   "Wrong hex RGBA value!"
+        );
+        static uint32_t const value
+        =   vf3p::detail::hexchar_to_int(D)
+        *   (1UL << 4 * sizeof...(Digits))
+        +   to_color<Digits...>::value;
+    };
+
+    template<char D>
+    struct to_color<D>
+    {   static_assert
+        (   (D >= '0' && D <= '9')
+        ||  (D >= 'A' && D <= 'F')
+        ||  (D >= 'a' && D <= 'f')
+        ||   D == 'x'
+        ||   D == 'X'
+        ,   "Wrong hex RGBA value!"
+        );
+        static uint32_t const value = vf3p::detail::hexchar_to_int(D);
+    };
+
+    template<char... Digits>
+    constexpr uint32_t operator"" _rgb()
+    {   static_assert(8 == sizeof...(Digits), "Hex RGB must have 6 digits!");
+        return to_color<Digits...>::value << 8 | 0xFF;
+    }
+
+    template<char... Digits>
+    constexpr uint32_t operator"" _rgba()
+    {   static_assert(10 == sizeof...(Digits), "Hex RGBA must have 8 digits!");
+        return to_color<Digits...>::value;
+    }
+
+#endif  //_VF3P_COLOR_
