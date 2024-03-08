@@ -49,10 +49,6 @@ namespace vf3p
         {   for_(func, makeIndexSequenceReverse<N>());
             // for_(func, std::make_index_sequence<N>());
         }
-        // template <class F, std::size_t... Is>
-        // void for_(F func, std::index_sequence<Is...>)
-        // {   (func(num<Is>{}), ...);
-        // }
         template<std::size_t N, typename T>
         struct uint32_to_array
         {};
@@ -272,6 +268,57 @@ namespace vf3p
         /// @brief returns a const reference to the element at specified location pos
         const_reference at(size_type pos) const
         {   return c_.at(pos);   }
+
+// -- iterators ----------------------------------------------------------------
+
+        /// @brief returns an iterator to the beginning
+        /// @return iterator to the beginning
+        iterator begin() noexcept
+        {   return c_.begin();   }
+        /// @brief returns a const iterator to the beginning
+        /// @return const iterator to the beginning
+        const_iterator begin() const noexcept
+        {   return c_.begin();   }
+        /// @brief returns a const iterator to the beginning
+        /// @return const iterator to the beginning
+        const_iterator cbegin() const noexcept
+        {   return c_.cbegin();   }
+        /// @brief returns an iterator to the end
+        /// @return iterator to the end
+        iterator end() noexcept
+        {   return c_.end();   }
+        /// @brief returns a const iterator to the end
+        /// @return const iterator to the end
+        const_iterator end() const noexcept
+        {   return c_.end();   }
+        /// @brief returns a const iterator to the end
+        /// @return const iterator to the end
+        const_iterator cend() const noexcept
+        {   return c_.cend();   }
+        /// @brief returns a reverse iterator to the beginning
+        /// @return reverse iterator to the beginning
+        reverse_iterator rbegin() noexcept
+        {   return c_.rbegin();   }
+        /// @brief returns a const reverse iterator to the beginning
+        /// @return const reverse iterator to the beginning
+        const_reverse_iterator rbegin() const noexcept
+        {   return c_.rbegin();   }
+        /// @brief returns a const reverse iterator to the beginning
+        /// @return const reverse iterator to the beginning
+        const_reverse_iterator crbegin() const noexcept
+        {   return c_.crbegin();   }
+        /// @brief returns a reverse iterator to the end
+        /// @return reverse iterator to the end
+        reverse_iterator rend() noexcept
+        {   return c_.rend();   }
+        /// @brief returns a const reverse iterator to the end
+        /// @return const reverse iterator to the end
+        const_reverse_iterator rend() const noexcept
+        {   return c_.rend();   }
+        /// @brief returns a const reverse iterator to the end
+        /// @return const reverse iterator to the end
+        const_reverse_iterator crend() const noexcept
+        {   return c_.crend();   }
 
 // -- capacity -----------------------------------------------------------------
 
