@@ -29,67 +29,83 @@
 namespace vf3p
 {   namespace detail
     {   template<std::size_t N, typename T>
-        struct from_uint32_impl
+        struct uint32_to_array
         {};
         template<typename T>
-        struct from_uint32_impl<1, T> // 8-bits per channels
-        {   static void convert(T& c, uint32_t rgba, std::false_type)
-            {   for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
+        struct uint32_to_array<1, T> // 8-bits per channels
+        {   static T convert(uint32_t rgba, std::false_type)
+            {   T c;
+                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
                 {   *itr = rgba & 0xFF;
                     rgba >>= 8;
                 }
+                return c;
             }
-            static void convert(T& c, uint32_t rgba, std::true_type)
-            {   for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
+            static T convert(uint32_t rgba, std::true_type)
+            {   T c;
+                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
                 {   *itr = (rgba & 0xFF) * (typename T::value_type)3.921568e-3;
                     rgba >>= 8;
                 }
+                return c;
             }
         };
         template<typename T>
-        struct from_uint32_impl<2, T> // 16-bits per channels
-        {   static void convert(T& c, uint32_t rgba, std::false_type)
-            {   for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
+        struct uint32_to_array<2, T> // 16-bits per channels
+        {   static T convert(uint32_t rgba, std::false_type)
+            {   T c;
+                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
                 {   *itr = (rgba & 0xFF) * 0xFF;
                     rgba >>= 8;
                 }
+                return c;
             }
-            static void convert(T& c, uint32_t rgba, std::true_type)
-            {   for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
+            static T convert(uint32_t rgba, std::true_type)
+            {   T c;
+                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
                 {   *itr = (rgba & 0xFF) * (typename T::value_type)3.921568e-3;
                     rgba >>= 8;
                 }
+                return c;
             }
         };
         template<typename T>
-        struct from_uint32_impl<4, T> // 32-bits per channels
-        {   static void convert(T& c, uint32_t rgba, std::false_type)
-            {   for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
+        struct uint32_to_array<4, T> // 32-bits per channels
+        {   static T convert(uint32_t rgba, std::false_type)
+            {   T c;
+                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
                 {   *itr = (rgba & 0xFF) * 0xFFFF;
                     rgba >>= 8;
                 }
+                return c;
             }
-            static void convert(T& c, uint32_t rgba, std::true_type)
-            {   for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
+            static T convert(uint32_t rgba, std::true_type)
+            {   T c;
+                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
                 {   *itr = (rgba & 0xFF) * (typename T::value_type)3.921568e-3;
                     rgba >>= 8;
                 }
+                return c;
             }
         };
         template<typename T>
-        struct from_uint32_impl<8, T> // 64-bits per channels
-        {   static void convert(T& c, uint32_t rgba, std::false_type)
-            {   for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
+        struct uint32_to_array<8, T> // 64-bits per channels
+        {   static T convert(uint32_t rgba, std::false_type)
+            {   T c;
+                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
                 {   *itr = (rgba & 0xFF) * 0xFFFFFF;
                     rgba >>= 8;
                 }
+                return c;
             }
-            static void convert(T& c, uint32_t rgba, std::true_type)
-            {   for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
+            static T convert(uint32_t rgba, std::true_type)
+            {   T c;
+                for (auto itr = c.rbegin(); itr != c.rend(); ++itr)
                 {   *itr = (rgba & 0xFF)
                          * (typename T::value_type)3.921568627451e-3;
                     rgba >>= 8;
                 }
+                return c;
             }
         };
         constexpr uint8_t hexchar_to_int(char ch)
@@ -157,12 +173,13 @@ namespace vf3p
         /// @brief converting constructor from uint32_t
         /// @param rgba The 32-bit RGBA value.
         generic_color(uint32_t rgba)
-        {   detail::from_uint32_impl<sizeof(T), std::array<T, C>>::convert
-            (   c_
-            ,   rgba
+        :   c_
+        (   detail::uint32_to_array<sizeof(T), std::array<T, C>>::convert
+            (   rgba
             ,   std::is_floating_point<T>()
-            );
-        }
+            )
+        )
+        {}
 
 // -- copy assignment operators ------------------------------------------------
 
