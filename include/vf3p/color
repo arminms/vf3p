@@ -309,10 +309,10 @@ namespace vf3p
 // -- string literal operator --------------------------------------------------
 
     template<char... Digits>
-    struct to_color;
+    struct hexcolor_to_uint32;
 
     template<char D, char... Digits>
-    struct to_color<D, Digits...>
+    struct hexcolor_to_uint32<D, Digits...>
     {   static_assert
         (   (D >= '0' && D <= '9')
         ||  (D >= 'A' && D <= 'F')
@@ -324,11 +324,11 @@ namespace vf3p
         static uint32_t const value
         =   vf3p::detail::hexchar_to_int(D)
         *   (1UL << 4 * sizeof...(Digits))
-        +   to_color<Digits...>::value;
+        +   hexcolor_to_uint32<Digits...>::value;
     };
 
     template<char D>
-    struct to_color<D>
+    struct hexcolor_to_uint32<D>
     {   static_assert
         (   (D >= '0' && D <= '9')
         ||  (D >= 'A' && D <= 'F')
@@ -343,13 +343,13 @@ namespace vf3p
     template<char... Digits>
     constexpr uint32_t operator"" _rgb()
     {   static_assert(8 == sizeof...(Digits), "Hex RGB must have 6 digits!");
-        return to_color<Digits...>::value << 8 | 0xFF;
+        return hexcolor_to_uint32<Digits...>::value << 8 | 0xFF;
     }
 
     template<char... Digits>
     constexpr uint32_t operator"" _rgba()
     {   static_assert(10 == sizeof...(Digits), "Hex RGBA must have 8 digits!");
-        return to_color<Digits...>::value;
+        return hexcolor_to_uint32<Digits...>::value;
     }
 
 #endif  //_VF3P_COLOR_
