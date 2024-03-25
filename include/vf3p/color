@@ -252,22 +252,36 @@ namespace vf3p
 
         /// @brief subscript operator
         /// @param i 
-        /// @return reference to the element at index i.
+        /// @return reference to the channel at index i.
         reference operator[] (size_type i)
-        {   return c_[i];   }
+        {   return c_[i];
+        }
         /// @brief subscript operator
         /// @param i
-        /// @return const reference to the element at index i.
+        /// @return const reference to the channel at index i.
         const_reference operator[] (size_type i) const
-        {   return c_[i];   }
-        /// @brief returns a reference to the element at specified location pos
-        /// @param pos The position of the element to return.
-        /// @return reference to the element at position pos.
+        {   return c_[i];
+        }
+        /// @brief returns a reference to the channel at specified location pos
+        /// @param pos The position of the channel to return.
+        /// @return reference to the channel at position pos.
         reference at(size_type pos)
-        {   return c_.at(pos);   }
-        /// @brief returns a const reference to the element at specified location pos
+        {   return c_.at(pos);
+        }
+        /// @brief returns a const reference to the channel at specified location pos
         const_reference at(size_type pos) const
-        {   return c_.at(pos);   }
+        {   return c_.at(pos);
+        }
+        /// @brief returns pointer to the underlying color object
+        /// @return pointer to the underlying color object.
+        constexpr value_type* data() noexcept
+        {   return c_.data();
+        }
+        /// @brief returns const pointer to the underlying color object
+        /// @return const pointer to the underlying color object.
+        constexpr value_type* data() const
+        {   return c_.data();
+        }
 
 // -- iterators ----------------------------------------------------------------
 
