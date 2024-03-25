@@ -1,0 +1,301 @@
+//
+// Copyright (c) 2024 Armin Sobhani
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+#ifndef _VF3P_PIXEL_
+#define _VF3P_PIXEL_
+
+#include <iterator>
+#include <type_traits>
+#include <cassert>
+#include <algorithm>
+#include <memory>
+
+#include <vf3p/color>
+
+namespace vf3p
+{   /// @brief A generic pixel class.
+    /// @tparam Iterator The type of the iterator.
+    /// @tparam C The number of channels in the pixel.
+    template <typename Iterator, std::size_t C = 4>
+    struct generic_pixel
+    {   using value_type = typename std::iterator_traits<Iterator>::value_type;
+        using difference_type = typename std::iterator_traits<Iterator>::difference_type;
+        using pointer = typename std::iterator_traits<Iterator>::pointer;
+        using reference = typename std::iterator_traits<Iterator>::reference;
+        using size_type = std::size_t;
+
+// -- constructors -------------------------------------------------------------
+
+        // disable default constructor
+        generic_pixel() = delete;
+        /// @brief constructor
+        /// @param begin The start of the pixel data in the frame buffer.
+        generic_pixel(Iterator begin) noexcept
+        :   start_itr_(begin)
+        {   static_assert(std::is_same_v<value_type, std::remove_cv_t<value_type>>, "value_type must be non-const");
+            static_assert(std::is_same_v<value_type, std::remove_reference_t<value_type>>, "value_type must be non-reference");
+            static_assert(std::is_same_v<value_type, std::remove_pointer_t<value_type>>, "value_type must be non-pointer");
+        }
+        /// @brief copy constructor
+        /// @param other The pixel to copy.
+        generic_pixel(const generic_pixel& other) noexcept
+        :   start_itr_(other.start_itr_)
+        {   static_assert(std::is_same_v<value_type, std::remove_cv_t<value_type>>, "value_type must be non-const");
+            static_assert(std::is_same_v<value_type, std::remove_reference_t<value_type>>, "value_type must be non-reference");
+            static_assert(std::is_same_v<value_type, std::remove_pointer_t<value_type>>, "value_type must be non-pointer");
+        }
+
+// -- copy assignment operators ------------------------------------------------
+
+        /// @brief copy assignment operator
+        /// @param other The pixel to copy.
+        generic_pixel& operator= (const generic_pixel& other)
+        {   // start_itr_ = other.start_itr_;
+            std::copy_n(other.begin(), C, start_itr_);
+            // for (size_type i = 0; i < C; ++i)
+            //    *(start_itr_ + i) = other[i];
+            return *this;
+        }
+        /// @brief Sets the pixel to the specified color.
+        /// @param c The color to set the pixel to.
+        generic_pixel& operator= (const generic_color<value_type,C>& c) noexcept
+        {   std::copy_n(c.begin(), C, start_itr_);
+            return *this;
+        }
+
+
+// -- element access -----------------------------------------------------------
+
+        /// @brief Returns a reference to the channel at specified index.
+        /// @param idx Position of the channel to return.
+        /// @return A reference to the requested channel.
+        reference operator[] (size_type idx) noexcept
+        {   return *(start_itr_ + idx);
+        }
+        /// @brief Returns red channel.
+        /// @return A reference to the red channel.
+        reference r() noexcept
+        {   return *(start_itr_ + 0);
+        }
+        /// @brief Returns green channel.
+        /// @return A reference to the green channel.
+        reference g() noexcept
+        {   return *(start_itr_ + 1);
+        }
+        /// @brief Returns blue channel.
+        /// @return A reference to the blue channel.
+        reference b() noexcept
+        {   return *(start_itr_ + 2);
+        }
+        /// @brief Returns alpha channel.
+        /// @return A reference to the alpha channel.
+        reference a() noexcept
+        {   return *(start_itr_ + 3);
+        }
+
+// -- iterators ----------------------------------------------------------------
+
+        /// @brief Returns an iterator to the beginning.
+        /// @return An iterator to the beginning.
+        Iterator begin() noexcept
+        {   return start_itr_;
+        }
+        /// @brief Returns an iterator to the end.
+        /// @return An iterator to the end.
+        Iterator end() noexcept
+        {   return (start_itr_ + C);
+        }
+
+// -- capacity -----------------------------------------------------------------
+
+        /// @brief Returns the number of channels in the pixel.
+        /// @return The number of channels in the pixel.
+        size_type size() const noexcept
+        {   return C;
+        }
+
+// -- set ----------------------------------------------------------------------
+
+        /// @brief Sets the pixel to the specified value.
+        /// @param value The value to set the pixel to.
+        void set(generic_pixel<Iterator,C> p)
+        {   //for (size_type i = 0; i < C; ++i)
+            //    *(start_itr_ + i) = p[i];
+            std::copy_n(p.begin(), C, start_itr_);
+            // set_impl(p, std::is_same_v<typename std::iterator_traits<T>::value_type, value_type>);
+        }
+
+// -- implementation -----------------------------------------------------------
+
+    private:
+        // template<typename T>
+        // void set_impl(const generic_pixel<T,C> p, std::true_type)
+        // {   for (size_type i = 0; i < C; ++i)
+        //         *(start_itr_ + i) = p[i];
+        // }
+
+        Iterator start_itr_; // iterator to the start of the pixel data
+    };
+
+    template <typename Iterator, std::size_t C = 4>
+    struct pixel_view
+    {   struct PixelIterator 
+        {   using iterator_category = std::random_access_iterator_tag;
+            using difference_type   = typename std::iterator_traits<Iterator>::difference_type;
+            using value_type        = generic_pixel<Iterator, C>;
+            using pointer           = std::shared_ptr<generic_pixel<Iterator, C>>;
+            using reference         = generic_pixel<Iterator, C>;
+
+            PixelIterator(Iterator itr)
+            :   itr_(itr)
+            {}
+            reference operator*() const
+            {   return generic_pixel<Iterator, C>(itr_);
+            }
+            pointer operator->() const
+            {   pointer p = std::make_shared<generic_pixel<Iterator, C>>(itr_);
+                return p;
+            }
+            PixelIterator& operator++()
+            {   itr_ += C;
+                return *this;
+            }
+            PixelIterator operator++(int)
+            {   PixelIterator tmp = *this;
+                ++(*this);
+                return tmp;
+            }
+            PixelIterator& operator--()
+            {   itr_ -= C;
+                return *this;
+            }  
+            PixelIterator operator--(int)
+            {   PixelIterator tmp = *this;
+                --(*this);
+                return tmp;
+            }
+            PixelIterator& operator+=(difference_type n)
+            {   itr_ += n * C;
+                return *this;
+            }
+            PixelIterator operator+(difference_type n) const
+            {   PixelIterator tmp = *this;
+                return tmp += n;
+            }
+            PixelIterator& operator-=(difference_type n)
+            {   return *this += -n;
+            }
+            PixelIterator operator-(difference_type n) const
+            {   PixelIterator tmp = *this;
+                return tmp -= n;
+            }
+            difference_type operator-(const PixelIterator& other) const
+            {   return (itr_ - other.itr_) / C;
+            }
+            reference operator[](difference_type n) const
+            {   return *(*this + n);
+            }
+            friend bool operator==
+            (   const PixelIterator& a
+            ,   const PixelIterator& b
+            )
+            {   return a.itr_ == b.itr_;
+            }
+            friend bool operator!=
+            (   const PixelIterator& a
+            ,   const PixelIterator& b
+            )
+            {   return !(a == b);
+            }
+            friend bool operator<
+            (   const PixelIterator& a
+            ,   const PixelIterator& b
+            )
+            {   return a.itr_ < b.itr_;
+            }
+            friend bool operator>
+            (   const PixelIterator& a
+            ,   const PixelIterator& b
+            )
+            {   return b < a;
+            }
+            friend bool operator<=
+            (   const PixelIterator& a
+            ,   const PixelIterator& b
+            )
+            {   return !(b < a);
+            }
+            friend bool operator>=
+            (
+                const PixelIterator& a
+            ,   const PixelIterator& b
+            )
+            {   return !(a < b);
+            }
+        private:
+            Iterator itr_;
+        };
+
+// -- member types -------------------------------------------------------------
+
+        using value_type = generic_pixel<Iterator, C>;
+        using size_type = std::size_t;
+        using difference_type = typename std::iterator_traits<Iterator>::difference_type;
+        using reference = generic_pixel<Iterator, C>;
+        using iterator = PixelIterator;
+
+// -- construtors --------------------------------------------------------------
+
+        pixel_view(Iterator begin, Iterator end)
+        :   begin_(begin)
+        ,   end_(end)
+        {}
+
+// -- element access -----------------------------------------------------------
+
+        generic_pixel<Iterator, C> operator[] (std::size_t idx)
+        {   return generic_pixel<Iterator, C>(begin_ + idx * C);
+        }
+
+// -- iterators ----------------------------------------------------------------
+
+        PixelIterator begin()
+        {   return PixelIterator(begin_);
+        }
+        PixelIterator end()
+        {   return PixelIterator(end_);
+        }
+
+// -- capacity -----------------------------------------------------------------
+
+        std::size_t size() const
+        {   return std::distance(begin_, end_) / C;
+        }
+
+// -- implementation -----------------------------------------------------------
+
+    private:
+        Iterator begin_;
+        Iterator end_;
+    };
+}   // end vf3p namespace
+
+#endif  //_VF3P_PIXEL_
