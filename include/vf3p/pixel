@@ -50,17 +50,41 @@ namespace vf3p
         /// @param begin The start of the pixel data in the frame buffer.
         generic_pixel(Iterator begin) noexcept
         :   start_itr_(begin)
-        {   static_assert(std::is_same_v<value_type, std::remove_cv_t<value_type>>, "value_type must be non-const");
-            static_assert(std::is_same_v<value_type, std::remove_reference_t<value_type>>, "value_type must be non-reference");
-            static_assert(std::is_same_v<value_type, std::remove_pointer_t<value_type>>, "value_type must be non-pointer");
+        {   static_assert
+            (   std::is_same_v<value_type
+            ,   std::remove_cv_t<value_type>>
+            ,   "value_type must be non-const"
+            );
+            static_assert
+            (   std::is_same_v<value_type
+            ,   std::remove_reference_t<value_type>>
+            ,   "value_type must be non-reference"
+            );
+            static_assert
+            (   std::is_same_v<value_type
+            ,   std::remove_pointer_t<value_type>>
+            ,   "value_type must be non-pointer"
+            );
         }
         /// @brief copy constructor
         /// @param other The pixel to copy.
         generic_pixel(const generic_pixel& other) noexcept
         :   start_itr_(other.start_itr_)
-        {   static_assert(std::is_same_v<value_type, std::remove_cv_t<value_type>>, "value_type must be non-const");
-            static_assert(std::is_same_v<value_type, std::remove_reference_t<value_type>>, "value_type must be non-reference");
-            static_assert(std::is_same_v<value_type, std::remove_pointer_t<value_type>>, "value_type must be non-pointer");
+        {   static_assert
+            (   std::is_same_v<value_type
+            ,   std::remove_cv_t<value_type>>
+            ,   "value_type must be non-const"
+            );
+            static_assert
+            (   std::is_same_v<value_type
+            ,   std::remove_reference_t<value_type>>
+            ,   "value_type must be non-reference"
+            );
+            static_assert
+            (   std::is_same_v<value_type
+            ,   std::remove_pointer_t<value_type>>
+            ,   "value_type must be non-pointer"
+            );
         }
 
 // -- copy assignment operators ------------------------------------------------
@@ -68,10 +92,17 @@ namespace vf3p
         /// @brief copy assignment operator
         /// @param other The pixel to copy.
         generic_pixel& operator= (const generic_pixel& other)
-        {   // start_itr_ = other.start_itr_;
-            std::copy_n(other.begin(), C, start_itr_);
-            // for (size_type i = 0; i < C; ++i)
-            //    *(start_itr_ + i) = other[i];
+        {   for (size_type i = 0; i < C; ++i)
+                start_itr_[i] = other[i];
+            return *this;
+        }
+        template <typename T>
+        generic_pixel& operator= (const generic_pixel<T,C>& other)
+        {   convert
+            (   other
+            ,   std::is_floating_point<value_type>()
+            ,   std::is_floating_point<typename T::value_type>()
+            );
             return *this;
         }
         /// @brief Sets the pixel to the specified color.
@@ -88,6 +119,9 @@ namespace vf3p
         /// @param idx Position of the channel to return.
         /// @return A reference to the requested channel.
         reference operator[] (size_type idx) noexcept
+        {   return *(start_itr_ + idx);
+        }
+        const reference operator[] (size_type idx) const
         {   return *(start_itr_ + idx);
         }
         /// @brief Returns red channel.
@@ -132,26 +166,57 @@ namespace vf3p
         {   return C;
         }
 
-// -- set ----------------------------------------------------------------------
-
-        /// @brief Sets the pixel to the specified value.
-        /// @param value The value to set the pixel to.
-        void set(generic_pixel<Iterator,C> p)
-        {   //for (size_type i = 0; i < C; ++i)
-            //    *(start_itr_ + i) = p[i];
-            std::copy_n(p.begin(), C, start_itr_);
-            // set_impl(p, std::is_same_v<typename std::iterator_traits<T>::value_type, value_type>);
-        }
-
 // -- implementation -----------------------------------------------------------
 
     private:
-        // template<typename T>
-        // void set_impl(const generic_pixel<T,C> p, std::true_type)
-        // {   for (size_type i = 0; i < C; ++i)
-        //         *(start_itr_ + i) = p[i];
-        // }
+        template<typename T>
+        void convert // fp -> fp
+        (   const generic_pixel<T,C> p
+        ,   std::true_type
+        ,   std::true_type
+        )
+        {   for (size_type i = 0; i < C; ++i)
+                start_itr_[i] = value_type(p[i]);
+        }
+        template<typename T>
+        void convert // fp -> int
+        (   const generic_pixel<T,C> p
+        ,   std::false_type
+        ,   std::true_type
+        )
+        {   for (size_type i = 0; i < C; ++i)
+                start_itr_[i] = value_type
+                (   std::max(T::value_type(0), std::min(T::value_type(1), p[i]))
+                *   std::numeric_limits<value_type>::max()
+                +   std::numeric_limits<typename T::value_type>::round_error()
+                );
+        }
+        template<typename T>
+        void convert // int -> fp
+        (   const generic_pixel<T,C> p
+        ,   std::true_type
+        ,   std::false_type
+        )
+        {   constexpr value_type scale
+            =   value_type(1)
+            /   std::numeric_limits<typename T::value_type>::max();
+            for (size_type i = 0; i < C; ++i)
+                start_itr_[i] = value_type(p[i] * scale);
+        }
+        template<typename T>
+        void convert // int -> int
+        (   const generic_pixel<T,C> p
+        ,   std::false_type
+        ,   std::false_type
+        )
+        {   constexpr float scale
+            =   std::numeric_limits<value_type>::max()
+            /   std::numeric_limits<typename T::value_type>::max();
+            for (size_type i = 0; i < C; ++i)
+                start_itr_[i] = value_type(p[i] * scale + 0.5f);
+        }
 
+        // member variables
         Iterator start_itr_; // iterator to the start of the pixel data
     };
 
